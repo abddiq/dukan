@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, Eye, Truck, CheckCircle, XCircle, Clock, Loader2, Trash2, Edit2, X, Filter, CreditCard, Send, Package, Download, FileSpreadsheet, Zap } from 'lucide-react';
-import { db, handleFirestoreError, OperationType } from '../../src/firebase';
+import { useStore } from '../../src/contexts/StoreContext';
+import { auth, handleFirestoreError, OperationType } from '../../src/firebase';
 import { CartContext } from '../../src/App';
 import { collection, getDocs, updateDoc, deleteDoc, doc, query, orderBy, getDoc, arrayUnion, Timestamp, writeBatch } from 'firebase/firestore';
 import { Order, OrderStatus, PaymentStatus, ShippingCompany } from '../../src/types';
@@ -9,6 +10,7 @@ import html2pdf from 'html2pdf.js';
 import * as XLSX from 'xlsx';
 
 const AdminOrders: React.FC = () => {
+  const { store, db: storeDb } = useStore();
   const navigate = useNavigate();
   const context = React.useContext(CartContext);
   const user = context?.user;
@@ -42,7 +44,7 @@ const AdminOrders: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+      const q = query(collection(storeDb, 'orders'), orderBy('createdAt', 'desc'));
       const snap = await getDocs(q);
       const fetchedOrders = snap.docs.map(d => {
         const data = d.data();
@@ -69,7 +71,7 @@ const AdminOrders: React.FC = () => {
 
   const fetchShippingCompanies = async () => {
     try {
-      const snap = await getDocs(collection(db, 'shipping_companies'));
+      const snap = await getDocs(collection(storeDb, 'shipping_companies'));
       const companies = snap.docs.map(d => ({ id: d.id, ...d.data() })) as ShippingCompany[];
       setShippingCompanies(companies.filter(c => !c.name.toLowerCase().includes('nwaslak')));
     } catch (err) {
@@ -133,7 +135,7 @@ const AdminOrders: React.FC = () => {
           updatedBy: user?.uid,
           notes: `تم تأكيد الطلب بالجملة (الحالة السابقة: ${order?.status || 'غير معروف'})`
         };
-        return updateDoc(doc(db, 'orders', id), { 
+        return updateDoc(doc(storeDb, 'orders', id), { 
           status: OrderStatus.CONFIRMED,
           updatedAt: new Date().toISOString(),
           statusHistory: arrayUnion(historyEntry)
@@ -165,7 +167,7 @@ const AdminOrders: React.FC = () => {
           updatedBy: user?.uid,
           notes: `تم تحويل الطلب للتجهيز بالجملة (الحالة السابقة: ${order?.status || 'غير معروف'})`
         };
-        return updateDoc(doc(db, 'orders', id), { 
+        return updateDoc(doc(storeDb, 'orders', id), { 
           status: OrderStatus.PROCESSING,
           updatedAt: new Date().toISOString(),
           statusHistory: arrayUnion(historyEntry)
@@ -341,9 +343,9 @@ const AdminOrders: React.FC = () => {
     if (exportedOrderIds.length === 0) return;
     setLoading(true);
     try {
-      const batch = writeBatch(db);
+      const batch = writeBatch(storeDb);
       exportedOrderIds.forEach(id => {
-        const orderRef = doc(db, 'orders', id);
+        const orderRef = doc(storeDb, 'orders', id);
         batch.update(orderRef, { status: OrderStatus.CONFIRMED });
       });
       await batch.commit();
@@ -440,7 +442,7 @@ const AdminOrders: React.FC = () => {
             notes: `تم إرسال الطلب عبر API لشركة ${company.name}${trackingNumber ? ` برقم تتبع: ${trackingNumber}` : ''}`
           };
 
-          await updateDoc(doc(db, 'orders', id), {
+          await updateDoc(doc(storeDb, 'orders', id), {
             status: OrderStatus.SHIPPED,
             shippingCompany: company.name,
             trackingNumber: trackingNumber,
@@ -483,7 +485,7 @@ const AdminOrders: React.FC = () => {
           updatedBy: user?.uid,
           notes: `تم إرسال الطلب لشركة التوصيل (${company.name}) بالجملة`
         };
-        return updateDoc(doc(db, 'orders', id), {
+        return updateDoc(doc(storeDb, 'orders', id), {
           status: OrderStatus.SHIPPED,
           shippingCompany: company.name,
           updatedAt: new Date().toISOString(),
@@ -522,7 +524,7 @@ const AdminOrders: React.FC = () => {
         notes: `تم إرسال الطلب لشركة التوصيل (${company.name})`
       };
 
-      await updateDoc(doc(db, 'orders', orderId), {
+      await updateDoc(doc(storeDb, 'orders', orderId), {
         status: OrderStatus.SHIPPED,
         shippingCompany: company.name,
         updatedAt: new Date().toISOString(),
@@ -564,7 +566,7 @@ const AdminOrders: React.FC = () => {
       if (status === OrderStatus.DELIVERED) {
         updates.paymentStatus = PaymentStatus.PAID;
       }
-      await updateDoc(doc(db, 'orders', id), updates);
+      await updateDoc(doc(storeDb, 'orders', id), updates);
       fetchOrders();
     } catch (err) {
       console.error(err);
@@ -574,7 +576,7 @@ const AdminOrders: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!confirm('هل أنت متأكد من حذف هذا الطلب؟ لا يمكن التراجع عن هذا الإجراء.')) return;
     try {
-      await deleteDoc(doc(db, 'orders', id));
+      await deleteDoc(doc(storeDb, 'orders', id));
       setOrders(orders.filter(o => o.id !== id));
       if (selectedOrder?.id === id) setSelectedOrder(null);
     } catch (err) {
@@ -590,7 +592,7 @@ const AdminOrders: React.FC = () => {
   const saveEdit = async () => {
     if (!editForm.id) return;
     try {
-      await updateDoc(doc(db, 'orders', editForm.id), {
+      await updateDoc(doc(storeDb, 'orders', editForm.id), {
         customer: editForm.customer,
         status: editForm.status,
         paymentStatus: editForm.paymentStatus

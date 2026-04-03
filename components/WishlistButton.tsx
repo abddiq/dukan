@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Heart, Loader2 } from 'lucide-react';
-import { db, auth } from '../src/firebase';
+import { useStore } from '../src/contexts/StoreContext';
+import { auth } from '../src/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 
@@ -11,6 +12,7 @@ interface WishlistButtonProps {
 }
 
 const WishlistButton: React.FC<WishlistButtonProps> = ({ productId, className = "" }) => {
+  const { db: storeDb } = useStore();
   const [isInWishlist, setIsInWishlist] = useState(false);
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
@@ -32,7 +34,7 @@ const WishlistButton: React.FC<WishlistButtonProps> = ({ productId, className = 
       }
       try {
         const q = query(
-          collection(db, 'wishlists'),
+          collection(storeDb, 'wishlists'),
           where('userId', '==', currentUser.uid),
           where('productId', '==', productId)
         );
@@ -57,16 +59,16 @@ const WishlistButton: React.FC<WishlistButtonProps> = ({ productId, className = 
     try {
       if (isInWishlist) {
         const q = query(
-          collection(db, 'wishlists'),
+          collection(storeDb, 'wishlists'),
           where('userId', '==', currentUser.uid),
           where('productId', '==', productId)
         );
         const snap = await getDocs(q);
-        const deletePromises = snap.docs.map(d => deleteDoc(doc(db, 'wishlists', d.id)));
+        const deletePromises = snap.docs.map(d => deleteDoc(doc(storeDb, 'wishlists', d.id)));
         await Promise.all(deletePromises);
         setIsInWishlist(false);
       } else {
-        await addDoc(collection(db, 'wishlists'), {
+        await addDoc(collection(storeDb, 'wishlists'), {
           userId: currentUser.uid,
           productId,
           addedAt: serverTimestamp()

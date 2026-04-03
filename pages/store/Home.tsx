@@ -3,15 +3,15 @@ import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 
 import { ChevronRight, Zap, Shield, Truck, Cpu, Loader2, Star, Quote } from 'lucide-react';
-import { db } from '../../src/firebase';
-import { collection, query, limit, getDocs, where, orderBy } from 'firebase/firestore';
+import { useStore } from '../../src/contexts/StoreContext';
+import { collection, query, limit, getDocs, where, orderBy, doc, getDoc } from 'firebase/firestore';
 import { Product, HeroSlide, StoreSettings } from '../../src/types';
-import { doc, getDoc } from 'firebase/firestore';
 import WishlistButton from '../../components/WishlistButton';
 import StoreStories from '../../components/StoreStories';
 import FlashSaleSection from '../../components/FlashSaleSection';
 
 const StoreHome: React.FC = () => {
+  const { db: storeDb } = useStore();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [slides, setSlides] = useState<HeroSlide[]>([]);
   const [settings, setSettings] = useState<StoreSettings | null>(null);
@@ -24,14 +24,14 @@ const StoreHome: React.FC = () => {
       setError(null);
       try {
         // Fetch Settings
-        const settingsSnap = await getDoc(doc(db, 'settings', 'store'));
+        const settingsSnap = await getDoc(doc(storeDb, 'settings', 'store'));
         if (settingsSnap.exists()) {
           setSettings(settingsSnap.data() as StoreSettings);
         }
 
         // Fetch New Arrivals (Ordered by date, limit 20)
         const qNewArrivals = query(
-          collection(db, 'products'),
+          collection(storeDb, 'products'),
           where('isActive', '==', true),
           orderBy('createdAt', 'desc'),
           limit(20)
@@ -41,7 +41,7 @@ const StoreHome: React.FC = () => {
         setFeaturedProducts(allNewArrivals.filter(p => !p.isLandingPageOnly));
 
         // Fetch Hero Slides
-        const qSlides = query(collection(db, 'hero_slides'), where('isActive', '==', true));
+        const qSlides = query(collection(storeDb, 'hero_slides'), where('isActive', '==', true));
         const slidesSnap = await getDocs(qSlides);
         const fetchedSlides = slidesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as HeroSlide[];
         setSlides(fetchedSlides.sort((a, b) => a.order - b.order));

@@ -10,15 +10,17 @@ import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, 
   CartesianGrid, Tooltip, BarChart, Bar, PieChart, Cell, Pie
 } from 'recharts';
-import { auth, db, handleFirestoreError, OperationType } from '../../src/firebase';
+import { auth, handleFirestoreError, OperationType } from '../../src/firebase';
 import { collection, getDocs, query, orderBy, limit, doc, getDoc } from 'firebase/firestore';
 import { Order, Product, StoreSettings, OrderStatus } from '../../src/types';
 import { motion } from 'motion/react';
 import CustomerProfileModal from '../../src/components/admin/CustomerProfileModal';
+import { useStore } from '../../src/contexts/StoreContext';
 
 const COLORS = ['var(--color-primary)', '#3B82F6', '#10B981', '#F59E0B', '#EF4444'];
 
 const AdminDashboard: React.FC = () => {
+  const { store, db: storeDb } = useStore();
   const [stats, setStats] = useState({ 
     totalSales: 0, 
     orderCount: 0, 
@@ -90,10 +92,10 @@ const AdminDashboard: React.FC = () => {
     setError(null);
     try {
       const [orderSnap, productSnap, userSnap, settingsSnap] = await Promise.all([
-        getDocs(query(collection(db, 'orders'), orderBy('createdAt', 'desc'))).catch(e => handleFirestoreError(e, OperationType.LIST, 'orders')),
-        getDocs(collection(db, 'products')).catch(e => handleFirestoreError(e, OperationType.LIST, 'products')),
-        getDocs(collection(db, 'users')).catch(e => handleFirestoreError(e, OperationType.LIST, 'users')),
-        getDoc(doc(db, 'settings', 'store')).catch(e => handleFirestoreError(e, OperationType.GET, 'settings/store'))
+        getDocs(query(collection(storeDb, 'orders'), orderBy('createdAt', 'desc'))).catch(e => handleFirestoreError(e, OperationType.LIST, 'orders')),
+        getDocs(collection(storeDb, 'products')).catch(e => handleFirestoreError(e, OperationType.LIST, 'products')),
+        getDocs(collection(storeDb, 'users')).catch(e => handleFirestoreError(e, OperationType.LIST, 'users')),
+        getDoc(doc(storeDb, 'settings', 'store')).catch(e => handleFirestoreError(e, OperationType.GET, 'settings/store'))
       ]);
       
       if (settingsSnap.exists()) {

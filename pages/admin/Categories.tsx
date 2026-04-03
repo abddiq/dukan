@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Edit2, Trash2, GripVertical, X, Loader2 } from 'lucide-react';
-import { db } from '../../src/firebase';
+import { useStore } from '../../src/contexts/StoreContext';
 import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, query, orderBy } from 'firebase/firestore';
 import { Category } from '../../src/types';
 
 const AdminCategories: React.FC = () => {
+  const { db: storeDb } = useStore();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +18,7 @@ const AdminCategories: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const q = query(collection(db, 'categories'), orderBy('order', 'asc'));
+      const q = query(collection(storeDb, 'categories'), orderBy('order', 'asc'));
       const snap = await getDocs(q);
       setCategories(snap.docs.map(d => ({ id: d.id, ...d.data() })) as Category[]);
     } catch (err: any) {
@@ -38,9 +39,9 @@ const AdminCategories: React.FC = () => {
     e.preventDefault();
     try {
       if (editingId) {
-        await updateDoc(doc(db, 'categories', editingId), form);
+        await updateDoc(doc(storeDb, 'categories', editingId), form);
       } else {
-        await addDoc(collection(db, 'categories'), form);
+        await addDoc(collection(storeDb, 'categories'), form);
       }
       setShowModal(false);
       setForm({ name_ar: '', order: 0, isActive: true });
@@ -54,7 +55,7 @@ const AdminCategories: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!confirm('حذف هذا القسم؟')) return;
     try {
-      await deleteDoc(doc(db, 'categories', id));
+      await deleteDoc(doc(storeDb, 'categories', id));
       fetchCategories();
     } catch (err) {
       console.error(err);

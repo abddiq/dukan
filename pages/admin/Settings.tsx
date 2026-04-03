@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../../src/firebase';
+import { useStore } from '../../src/contexts/StoreContext';
 import { StoreSettings } from '../../src/types';
 import { Save, Loader2, Phone, Mail, MapPin, Facebook, Instagram, Youtube, MessageCircle, Globe, Image as ImageIcon, Settings as SettingsIcon, Target } from 'lucide-react';
 
 const AdminSettings: React.FC = () => {
+  const { db: storeDb } = useStore();
   const [settings, setSettings] = useState<StoreSettings & { shippingPrices?: Record<string, number> }>({
     phone: '',
     whatsapp: '',
@@ -25,7 +26,7 @@ const AdminSettings: React.FC = () => {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const docRef = doc(db, 'settings', 'store');
+        const docRef = doc(storeDb, 'settings', 'store');
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           setSettings(docSnap.data() as StoreSettings);
@@ -44,7 +45,7 @@ const AdminSettings: React.FC = () => {
     setSaving(true);
     setMessage(null);
     try {
-      await setDoc(doc(db, 'settings', 'store'), settings);
+      await setDoc(doc(storeDb, 'settings', 'store'), settings);
       setMessage({ type: 'success', text: 'تم حفظ الإعدادات بنجاح' });
     } catch (error) {
       console.error("Error saving settings:", error);

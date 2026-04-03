@@ -27,6 +27,7 @@ const LandingPage: React.FC = () => {
     brandId: '',
     images: ['https://placehold.co/600x600/151B2B/FFFFFF?text=Loading'],
     specs: [],
+    storeId: '',
     createdAt: null as any,
     updatedAt: null as any
   });

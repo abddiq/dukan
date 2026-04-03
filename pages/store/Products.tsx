@@ -2,12 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Filter, Search, LayoutGrid, List as ListIcon, SlidersHorizontal, Loader2, Sparkles, Heart, Zap } from 'lucide-react';
-import { db } from '../../src/firebase';
+import { useStore } from '../../src/contexts/StoreContext';
 import { collection, query, getDocs, where, orderBy, doc, getDoc } from 'firebase/firestore';
 import { Product, Category, Brand, StoreSettings } from '../../src/types';
 import WishlistButton from '../../components/WishlistButton';
 
 const StoreProducts: React.FC = () => {
+  const { db: storeDb } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -34,8 +35,8 @@ const StoreProducts: React.FC = () => {
       setError(null);
       try {
         const [catSnap, settingsSnap] = await Promise.all([
-          getDocs(query(collection(db, 'categories'), where('isActive', '==', true), orderBy('order', 'asc'))),
-          getDoc(doc(db, 'settings', 'store'))
+          getDocs(query(collection(storeDb, 'categories'), where('isActive', '==', true), orderBy('order', 'asc'))),
+          getDoc(doc(storeDb, 'settings', 'store'))
         ]);
 
         setCategories(catSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Category[]);
@@ -44,13 +45,13 @@ const StoreProducts: React.FC = () => {
         }
 
         try {
-          const brandSnap = await getDocs(query(collection(db, 'brands'), where('isActive', '==', true)));
+          const brandSnap = await getDocs(query(collection(storeDb, 'brands'), where('isActive', '==', true)));
           setBrands(brandSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Brand[]);
         } catch (brandErr: any) {
           console.warn("Could not fetch brands, likely permission issue:", brandErr);
         }
 
-        const prodSnap = await getDocs(query(collection(db, 'products'), where('isActive', '==', true)));
+        const prodSnap = await getDocs(query(collection(storeDb, 'products'), where('isActive', '==', true)));
         const allProducts = prodSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Product[];
         setProducts(allProducts.filter(p => !p.isLandingPageOnly));
       } catch (err: any) {

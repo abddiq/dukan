@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { db } from '../src/firebase';
+import { useStore } from '../src/contexts/StoreContext';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { Story } from '../src/types';
 import { X, ChevronLeft, ChevronRight, ShoppingBag, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const StoreStories: React.FC = () => {
+  const { db: storeDb } = useStore();
   const [stories, setStories] = useState<Story[]>([]);
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,7 +32,7 @@ const StoreStories: React.FC = () => {
       try {
         const now = new Date().toISOString();
         const q = query(
-          collection(db, 'stories'),
+          collection(storeDb, 'stories'),
           where('isActive', '==', true),
           where('expiresAt', '>', now)
         );

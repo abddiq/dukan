@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, ShoppingCart, Star, Heart, Clock, Zap } from 'lucide-react';
-import { db } from '../src/firebase';
+import { useStore } from '../src/contexts/StoreContext';
 import { collection, query, getDocs, where, limit, doc, getDoc } from 'firebase/firestore';
 import { Product, StoreSettings } from '../src/types';
 import { CartContext } from '../src/App';
@@ -10,6 +10,7 @@ import WishlistButton from './WishlistButton';
 import { motion, AnimatePresence } from 'motion/react';
 
 const FlashSaleSection: React.FC = () => {
+  const { db: storeDb } = useStore();
   const [discountProducts, setDiscountProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
@@ -21,8 +22,8 @@ const FlashSaleSection: React.FC = () => {
     const fetchDiscounts = async () => {
       try {
         const [prodSnap, settingsSnap] = await Promise.all([
-          getDocs(query(collection(db, 'products'), where('isActive', '==', true))),
-          getDoc(doc(db, 'settings', 'store'))
+          getDocs(query(collection(storeDb, 'products'), where('isActive', '==', true))),
+          getDoc(doc(storeDb, 'settings', 'store'))
         ]);
 
         const now = new Date();

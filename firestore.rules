@@ -9,11 +9,25 @@ service cloud.firestore {
     function isAdmin() {
       return isSignedIn() && (
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'super_admin', 'team_member']) ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'super_admin', 'team_member', 'owner']) ||
+        request.auth.token.email == "pcthrone4@gmail.com" ||
+        request.auth.token.email == "admin@dukan.com"
+      );
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && (
         request.auth.token.email == "pcthrone4@gmail.com" ||
         request.auth.token.email == "admin@dukan.com" ||
-        request.auth.uid == "z8kiRQ1Go3URNDFQnaOeABsSGYU2"
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin')
       );
+    }
+
+    // Stores: Only super admins can manage, everyone can read (for detection)
+    match /stores/{storeId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
     }
 
     // Webhook Logs: Only admins can read/write

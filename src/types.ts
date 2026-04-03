@@ -23,6 +23,7 @@ export interface Spec {
 
 export interface Product {
   id: string;
+  storeId: string;
   name_ar: string;
   name_en?: string;
   price: number;
@@ -70,6 +71,7 @@ export interface WishlistItem {
 
 export interface Category {
   id: string;
+  storeId: string;
   name_ar: string;
   order: number;
   isActive: boolean;
@@ -77,6 +79,7 @@ export interface Category {
 
 export interface Brand {
   id: string;
+  storeId: string;
   name: string;
   logoUrl?: string;
   isActive: boolean;
@@ -95,6 +98,7 @@ export interface CartItem {
 
 export interface Order {
   id: string;
+  storeId: string;
   orderNumber: string;
   userId?: string;
   customer: {
@@ -153,6 +157,7 @@ export interface ShippingCompany {
 
 export interface User {
   uid: string;
+  storeId?: string; // Optional for super_admins, required for store admins/customers
   role: 'admin' | 'customer' | 'super_admin' | 'team_member';
   name: string;
   phone?: string;
@@ -198,6 +203,20 @@ export interface Story {
   expiresAt: string;
   isActive: boolean;
   createdAt: string;
+}
+
+export interface Store {
+  id: string;
+  name: string;
+  subdomain: string;
+  customDomain?: string;
+  databaseId?: string; // Optional, defaults to (default) if not provided
+  ownerId: string;
+  logoUrl?: string;
+  status: 'active' | 'suspended' | 'pending';
+  plan: 'basic' | 'pro' | 'enterprise';
+  createdAt: any;
+  settings: StoreSettings;
 }
 
 export interface StoreSettings {

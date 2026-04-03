@@ -2,14 +2,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { HashRouter as Router, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, LayoutDashboard, Home as HomeIcon, Package, List, Users, Settings, User as UserIcon, LogOut, Menu, X, Plus, Search, Trash2, ChevronRight, CheckCircle, CreditCard, Info, Sparkles, Heart, Star, Palette, Moon, Snowflake, AlertTriangle, Clock, Zap, Wallet } from 'lucide-react';
+import { ShoppingCart, LayoutDashboard, Home as HomeIcon, Package, List, Users, Settings, User as UserIcon, LogOut, Menu, X, Plus, Search, Trash2, ChevronRight, CheckCircle, CreditCard, Info, Sparkles, Heart, Star, Palette, Moon, Snowflake, AlertTriangle, Clock, Zap, Wallet, ShoppingBag, ArrowUpRight, Globe } from 'lucide-react';
 import { logActivity, ActivityType } from './services/activityService';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from './firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { Product, CartItem, Order, OrderStatus, Category, User, StoreSettings } from './types';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { Product, CartItem, Order, OrderStatus, Category, User, StoreSettings, Store } from './types';
 import { initPixels, trackPageView } from './lib/pixels';
 import { useLocation } from 'react-router-dom';
+import { StoreProvider, useStore } from './contexts/StoreContext';
 
 // Pages
 import StoreHome from '../pages/store/Home';
@@ -84,25 +85,16 @@ export const CartContext = React.createContext<{
 
 const PixelTracker: React.FC = () => {
   const location = useLocation();
-  const [settings, setSettings] = useState<StoreSettings | null>(null);
+  const { store, isPlatform } = useStore();
   const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const docSnap = await getDoc(doc(db, 'settings', 'store'));
-        if (docSnap.exists()) {
-          const s = docSnap.data() as StoreSettings;
-          setSettings(s);
-          initPixels(s);
-          setInitialized(true);
-        }
-      } catch (error) {
-        console.error("Error initializing pixels:", error);
-      }
-    };
-    fetchSettings();
-  }, []);
+    if (isPlatform) return;
+    if (store?.settings) {
+      initPixels(store.settings);
+      setInitialized(true);
+    }
+  }, [store, isPlatform]);
 
   useEffect(() => {
     if (initialized) {
@@ -111,6 +103,99 @@ const PixelTracker: React.FC = () => {
   }, [location, initialized]);
 
   return null;
+};
+
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
+
+const PlatformLanding: React.FC = () => {
+  const navigate = useNavigate();
+  return (
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-primary selection:text-white overflow-hidden">
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-black/20 backdrop-blur-xl border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+              <ShoppingBag className="text-white w-6 h-6" />
+            </div>
+            <span className="text-2xl font-black tracking-tighter italic uppercase">دكان</span>
+          </div>
+          <div className="hidden md:flex items-center gap-8 text-sm font-bold text-white/60">
+            <a href="#features" className="hover:text-white transition-colors">المميزات</a>
+            <a href="#pricing" className="hover:text-white transition-colors">الأسعار</a>
+            <a href="#contact" className="hover:text-white transition-colors">اتصل بنا</a>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link to="/admin/login" className="text-sm font-bold text-white/60 hover:text-white transition-colors">تسجيل الدخول</Link>
+            <Link to="/admin/signup" className="px-6 py-3 bg-white text-black text-sm font-black rounded-xl hover:bg-primary hover:text-white transition-all">ابدأ الآن مجاناً</Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <section className="relative pt-40 pb-20 px-6">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-5xl h-[600px] bg-primary/20 blur-[120px] rounded-full -z-10 opacity-30" />
+        <div className="max-w-5xl mx-auto text-center space-y-10">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-primary"
+          >
+            <Zap className="w-3 h-3" /> منصة التجارة الإلكترونية الأسرع في العراق
+          </motion.div>
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9] italic uppercase"
+          >
+            أنشئ متجرك <br /> <span className="text-primary">في دقائق</span>
+          </motion.h1>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="text-xl text-white/40 max-w-2xl mx-auto font-bold leading-relaxed"
+          >
+            دكان هي المنصة المتكاملة التي تمنحك كل ما تحتاجه لبيع منتجاتك عبر الإنترنت، من إدارة المخزون إلى الدفع الإلكتروني والشحن.
+          </motion.p>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6"
+          >
+            <Link 
+              to="/admin/signup"
+              className="w-full sm:w-auto px-12 py-6 bg-primary text-white font-black text-xl rounded-2xl hover:bg-primary-dark transition-all shadow-2xl shadow-primary/40 flex items-center justify-center gap-3"
+            >
+              ابدأ متجرك الآن <ArrowUpRight className="w-6 h-6" />
+            </Link>
+            <button className="w-full sm:w-auto px-12 py-6 bg-white/5 border border-white/10 text-white font-black text-xl rounded-2xl hover:bg-white/10 transition-all">
+              شاهد الديمو
+            </button>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Features Grid */}
+      <section id="features" className="max-w-7xl mx-auto px-6 py-40 grid grid-cols-1 md:grid-cols-3 gap-8">
+        {[
+          { title: 'نطاق خاص', desc: 'احصل على نطاق فرعي مجاني أو اربط نطاقك الخاص بمتجرك بسهولة.', icon: Globe },
+          { title: 'إدارة ذكية', desc: 'لوحة تحكم احترافية لإدارة المنتجات، الطلبات، والعملاء في مكان واحد.', icon: BarChart3 },
+          { title: 'دعم الذكاء الاصطناعي', desc: 'استخدم Gemini لتوليد أوصاف المنتجات وتحسين محركات البحث تلقائياً.', icon: Sparkles }
+        ].map((f, i) => (
+          <div key={i} className="p-10 bg-white/5 border border-white/10 rounded-[3rem] space-y-6 group hover:border-primary/30 transition-all">
+            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <f.icon className="text-primary w-8 h-8" />
+            </div>
+            <h3 className="text-2xl font-black italic uppercase tracking-tight">{f.title}</h3>
+            <p className="text-white/40 font-bold leading-relaxed">{f.desc}</p>
+          </div>
+        ))}
+      </section>
+    </div>
+  );
 };
 
 const App: React.FC = () => {
@@ -181,100 +266,162 @@ const App: React.FC = () => {
   const total = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQty, clearCart, total, user }}>
-      <Router>
-        <PixelTracker />
-        <Routes>
-          {/* Storefront Routes */}
-          <Route path="/" element={<StoreLayout><StoreHome /></StoreLayout>} />
-          <Route path="/login" element={<StoreLayout><StoreLogin /></StoreLayout>} />
-          <Route path="/signup" element={<StoreLayout><StoreSignup /></StoreLayout>} />
-          <Route path="/products" element={<StoreLayout><StoreProducts /></StoreLayout>} />
-          <Route path="/brands" element={<StoreLayout><StoreBrands /></StoreLayout>} />
-          <Route path="/products/:id" element={<StoreLayout><StoreProductDetail /></StoreLayout>} />
-          <Route path="/cart" element={<StoreLayout><StoreCart /></StoreLayout>} />
-          <Route path="/checkout" element={<StoreLayout><StoreCheckout /></StoreLayout>} />
-          <Route path="/order-success" element={<StoreLayout><StoreSuccess /></StoreLayout>} />
-          <Route path="/profile" element={<StoreLayout><StoreProfile /></StoreLayout>} />
-          <Route path="/profile/orders/:id" element={<StoreLayout><StoreOrderDetail /></StoreLayout>} />
-          <Route path="/contact" element={<StoreLayout><StoreContact /></StoreLayout>} />
-          <Route path="/about" element={<StoreLayout><StoreAboutUs /></StoreLayout>} />
-          <Route path="/lp/:id" element={<LandingPage />} />
+    <StoreProvider>
+      <CartContext.Provider value={{ cart, addToCart, removeFromCart, updateQty, clearCart, total, user }}>
+        <Router>
+          <PixelTracker />
+          <AppRoutes user={user} loading={loading} />
+        </Router>
+      </CartContext.Provider>
+    </StoreProvider>
+  );
+};
 
-          {/* Admin Routes */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/signup" element={<AdminSignup />} />
-          <Route path="/admin" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminDashboard /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/products" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminProducts /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/digital-products" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminDigitalProducts /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/installments" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminInstallments /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/brands" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminBrands /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/categories" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminCategories /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/orders" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminOrders /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/orders/:id" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminOrderDetail /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/customers" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminCustomers /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/hero" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminHero /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/hero/add" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminAddHero /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/hero/edit/:id" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminEditHero /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/products/add" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminAddProduct /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/digital-products/add" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminAddDigitalProduct /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/products/edit/:id" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminEditProduct /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/reviews" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminReviews /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/themes" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminThemes /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/team" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminTeam /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/team/add" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminAddTeamMember /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/team/edit/:id" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminEditTeamMember /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/team/:id" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminTeamMemberProfile /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/tickets" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminTickets /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/stories" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminStories /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/stories/add" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminAddStory /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/analytics" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminAnalytics /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/discounts" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminDiscounts /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/cashier" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminElectronicCashier /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/suppliers" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminSuppliers /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/shipping" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminShippingCompanies /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/shipping/:id" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminShippingCompanyDetails /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/campaigns" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminCampaigns /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/fb-ads" element={<AdminRoute user={user} loading={loading}><AdminLayout><FacebookAdsManager /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/fb-ads/:id" element={<AdminRoute user={user} loading={loading}><AdminLayout><FacebookAdDetails /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/settings" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminSettings /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/heeiz" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminHeeizIntegration /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/telegram" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminTelegramManager /></AdminLayout></AdminRoute>} />
-          <Route path="/admin/settings/about" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminAboutUsSettings /></AdminLayout></AdminRoute>} />
+const AppRoutes: React.FC<{ user: User | null, loading: boolean }> = ({ user: propUser, loading: authLoading }) => {
+  const { store, db: storeDb, isPlatform, isSuperAdmin, loading: storeLoading, error: storeError } = useStore();
+  const [user, setUser] = useState<User | null>(propUser);
+  const [loading, setLoading] = useState(authLoading);
 
-          {/* Catch all */}
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
-      </Router>
-    </CartContext.Provider>
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!auth.currentUser) {
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Use storeDb if in a store, otherwise use platformDb (which is the default storeDb when isPlatform is true)
+        const userDoc = await getDoc(doc(storeDb, 'users', auth.currentUser.uid));
+        if (userDoc.exists()) {
+          setUser({ uid: auth.currentUser.uid, ...userDoc.data() } as User);
+        } else {
+          setUser({ uid: auth.currentUser.uid, email: auth.currentUser.email, role: 'customer' } as User);
+        }
+      } catch (err) {
+        console.error("Error fetching user profile:", err);
+        setUser({ uid: auth.currentUser.uid, email: auth.currentUser.email, role: 'customer' } as User);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (!authLoading) {
+      fetchUserProfile();
+    }
+  }, [authLoading, storeDb]);
+
+  if (storeLoading || loading) {
+    return (
+      <div className="min-h-screen bg-bg-main flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (storeError) {
+    return (
+      <div className="min-h-screen bg-bg-main flex flex-col items-center justify-center p-6 text-center">
+        <h1 className="text-4xl font-black mb-4">عذراً، المتجر غير موجود</h1>
+        <p className="opacity-60 mb-8">يرجى التأكد من الرابط الصحيح.</p>
+        <a href="https://dukan.com" className="px-8 py-3 bg-primary text-white font-bold rounded-xl">العودة للمنصة الرئيسية</a>
+      </div>
+    );
+  }
+
+  if (isPlatform) {
+    return (
+      <Routes>
+        <Route path="/" element={<PlatformLanding />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/signup" element={<AdminSignup />} />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    );
+  }
+
+  if (isSuperAdmin) {
+    return (
+      <Routes>
+        <Route path="/" element={<SuperAdminDashboard />} />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    );
+  }
+
+  return (
+    <Routes>
+      {/* Storefront Routes */}
+      <Route path="/" element={<StoreLayout><StoreHome /></StoreLayout>} />
+      <Route path="/login" element={<StoreLayout><StoreLogin /></StoreLayout>} />
+      <Route path="/signup" element={<StoreLayout><StoreSignup /></StoreLayout>} />
+      <Route path="/products" element={<StoreLayout><StoreProducts /></StoreLayout>} />
+      <Route path="/brands" element={<StoreLayout><StoreBrands /></StoreLayout>} />
+      <Route path="/products/:id" element={<StoreLayout><StoreProductDetail /></StoreLayout>} />
+      <Route path="/cart" element={<StoreLayout><StoreCart /></StoreLayout>} />
+      <Route path="/checkout" element={<StoreLayout><StoreCheckout /></StoreLayout>} />
+      <Route path="/order-success" element={<StoreLayout><StoreSuccess /></StoreLayout>} />
+      <Route path="/profile" element={<StoreLayout><StoreProfile /></StoreLayout>} />
+      <Route path="/profile/orders/:id" element={<StoreLayout><StoreOrderDetail /></StoreLayout>} />
+      <Route path="/contact" element={<StoreLayout><StoreContact /></StoreLayout>} />
+      <Route path="/about" element={<StoreLayout><StoreAboutUs /></StoreLayout>} />
+      <Route path="/lp/:id" element={<LandingPage />} />
+
+      {/* Admin Routes */}
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin/signup" element={<AdminSignup />} />
+      <Route path="/admin" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminDashboard /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/products" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminProducts /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/digital-products" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminDigitalProducts /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/installments" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminInstallments /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/brands" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminBrands /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/categories" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminCategories /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/orders" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminOrders /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/orders/:id" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminOrderDetail /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/customers" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminCustomers /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/hero" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminHero /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/hero/add" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminAddHero /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/hero/edit/:id" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminEditHero /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/products/add" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminAddProduct /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/digital-products/add" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminAddDigitalProduct /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/products/edit/:id" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminEditProduct /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/reviews" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminReviews /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/themes" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminThemes /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/team" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminTeam /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/team/add" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminAddTeamMember /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/team/edit/:id" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminEditTeamMember /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/team/:id" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminTeamMemberProfile /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/tickets" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminTickets /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/stories" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminStories /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/stories/add" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminAddStory /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/analytics" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminAnalytics /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/discounts" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminDiscounts /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/cashier" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminElectronicCashier /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/suppliers" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminSuppliers /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/shipping" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminShippingCompanies /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/shipping/:id" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminShippingCompanyDetails /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/campaigns" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminCampaigns /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/fb-ads" element={<AdminRoute user={user} loading={loading}><AdminLayout><FacebookAdsManager /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/fb-ads/:id" element={<AdminRoute user={user} loading={loading}><AdminLayout><FacebookAdDetails /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/settings" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminSettings /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/heeiz" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminHeeizIntegration /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/telegram" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminTelegramManager /></AdminLayout></AdminRoute>} />
+      <Route path="/admin/settings/about" element={<AdminRoute user={user} loading={loading}><AdminLayout><AdminAboutUsSettings /></AdminLayout></AdminRoute>} />
+
+      {/* Catch all */}
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
   );
 };
 
 // Layout Components
 const StoreLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const context = React.useContext(CartContext);
+  const { store } = useStore();
   const cart = context?.cart || [];
   const user = context?.user;
   const [mobileMenu, setMobileMenu] = useState(false);
-  const [settings, setSettings] = useState<StoreSettings | null>(null);
-
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const docSnap = await getDoc(doc(db, 'settings', 'store'));
-        if (docSnap.exists()) {
-          setSettings(docSnap.data() as StoreSettings);
-        }
-      } catch (error: any) {
-        if (error.code === 'permission-denied') {
-          console.warn("Settings fetch failed (StoreLayout) due to permissions.");
-        } else {
-          console.error("Error fetching settings (StoreLayout):", error);
-        }
-      }
-    };
-    fetchSettings();
-  }, []);
+  const settings = store?.settings;
 
   const themeClass = settings?.theme === 'ramadan' ? 'theme-ramadan' : settings?.theme === 'winter' ? 'theme-winter' : '';
   const storeStatus = settings?.storeStatus || 'open';
@@ -469,35 +616,22 @@ const StoreLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 const AdminLayout: React.FC<{ children: React.ReactNode, user?: User }> = ({ children, user: propUser }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [settings, setSettings] = useState<StoreSettings | null>(null);
+  const { store } = useStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const context = React.useContext(CartContext);
   const user = propUser || context?.user;
-
-  const hasPermission = (permission: string) => {
-    if (user?.role === 'super_admin' || user?.role === 'admin') return true;
-    return user?.permissions?.includes(permission);
-  };
-
-  useEffect(() => {
-    const fetchSettings = async () => {
-      try {
-        const docSnap = await getDoc(doc(db, 'settings', 'store'));
-        if (docSnap.exists()) {
-          setSettings(docSnap.data() as StoreSettings);
-        }
-      } catch (error: any) {
-        console.error("Error fetching settings (AdminLayout):", error);
-      }
-    };
-    fetchSettings();
-  }, []);
+  const settings = store?.settings;
 
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
   const toggleGroup = (title: string) => {
     setCollapsedGroups(prev => ({ ...prev, [title]: !prev[title] }));
+  };
+
+  const hasPermission = (permission: string) => {
+    if (user?.role === 'super_admin' || user?.role === 'admin') return true;
+    return user?.permissions?.includes(permission);
   };
 
   const navGroups = [

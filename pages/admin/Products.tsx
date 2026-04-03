@@ -5,11 +5,13 @@ import { Plus, Search, Filter, Edit2, Trash2, Eye, X, Loader2, Upload, Sparkles,
 import { db, storage } from '../../src/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useStore } from '../../src/contexts/StoreContext';
 import { Product, Category, Brand } from '../../src/types';
 // Fix: Implement Gemini API for AI-assisted product descriptions
 import { GoogleGenAI } from "@google/genai";
 
 const AdminProducts: React.FC = () => {
+  const { store, db: storeDb } = useStore();
   const [products, setProducts] = useState<Product[]>([]);
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -41,8 +43,8 @@ const AdminProducts: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const pSnap = await getDocs(collection(db, 'products'));
-      const cSnap = await getDocs(collection(db, 'categories'));
+      const pSnap = await getDocs(collection(storeDb, 'products'));
+      const cSnap = await getDocs(collection(storeDb, 'categories'));
       
       const allProducts = pSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Product[];
       // Filter out digital products from regular products list
@@ -50,7 +52,7 @@ const AdminProducts: React.FC = () => {
       setCategories(cSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Category[]);
 
       try {
-        const bSnap = await getDocs(collection(db, 'brands'));
+        const bSnap = await getDocs(collection(storeDb, 'brands'));
         setBrands(bSnap.docs.map(d => ({ id: d.id, ...d.data() })) as Brand[]);
       } catch (brandErr) {
         console.warn("Could not fetch brands in admin:", brandErr);
@@ -90,7 +92,7 @@ const AdminProducts: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (!confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
     try {
-      await deleteDoc(doc(db, 'products', id));
+      await deleteDoc(doc(storeDb, 'products', id));
       setProducts(products.filter(p => p.id !== id));
     } catch (err) {
       console.error(err);
@@ -106,7 +108,7 @@ const AdminProducts: React.FC = () => {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       };
-      await addDoc(collection(db, 'products'), data);
+      await addDoc(collection(storeDb, 'products'), data);
       setShowModal(false);
       fetchData();
     } catch (err) {
