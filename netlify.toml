@@ -1,0 +1,18 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[[redirects]]
+  from = "/api/wayl/create-link"
+  to = "/.netlify/functions/create-link"
+  status = 200
+
+[[redirects]]
+  from = "/api/wayl/webhook"
+  to = "/.netlify/functions/webhook"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

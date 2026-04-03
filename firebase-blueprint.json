@@ -1,0 +1,114 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A gaming product in the store",
+      "type": "object",
+      "properties": {
+        "name_ar": { "type": "string" },
+        "name_en": { "type": "string" },
+        "description_ar": { "type": "string" },
+        "description_en": { "type": "string" },
+        "price": { "type": "number" },
+        "salePrice": { "type": "number" },
+        "costPrice": { "type": "number" },
+        "stockQuantity": { "type": "integer" },
+        "isActive": { "type": "boolean" },
+        "categoryId": { "type": "string" },
+        "brandId": { "type": "string" },
+        "images": { "type": "array", "items": { "type": "string" } },
+        "specs": { "type": "array", "items": { "type": "object" } },
+        "isDigital": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name_ar", "price", "stockQuantity"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A customer order",
+      "type": "object",
+      "properties": {
+        "orderNumber": { "type": "string" },
+        "items": { "type": "array" },
+        "customer": { "type": "object" },
+        "shippingCost": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "shippingCompany": { "type": "string" },
+        "status": { "type": "string" },
+        "paymentStatus": { "type": "string" },
+        "paymentMethod": { "type": "string" },
+        "source": { "type": "string" },
+        "sessionId": { "type": "string" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "LandingPageSession": {
+      "title": "Landing Page Session",
+      "description": "A session tracking a visitor on the landing page",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "productName": { "type": "string" },
+        "entryTime": { "type": "string", "format": "date-time" },
+        "isConverted": { "type": "boolean" },
+        "scrollDepth": { "type": "number" },
+        "interactions": { "type": "array" },
+        "utmSource": { "type": "string" },
+        "utmMedium": { "type": "string" },
+        "utmCampaign": { "type": "string" },
+        "deviceInfo": { "type": "object" }
+      }
+    },
+    "UserActivity": {
+      "title": "User Activity",
+      "description": "A log of user activity",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "type": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "details": { "type": "string" },
+        "metadata": { "type": "object" }
+      }
+    },
+    "TelegramHistory": {
+      "title": "Telegram History",
+      "description": "A history of sent Telegram messages",
+      "type": "object",
+      "properties": {
+        "messageId": { "type": "integer" },
+        "text": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "type": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Store products"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Customer orders"
+    },
+    "/landing_page_sessions/{sessionId}": {
+      "schema": "LandingPageSession",
+      "description": "Landing page visitor sessions"
+    },
+    "/user_activities/{activityId}": {
+      "schema": "UserActivity",
+      "description": "User activity logs"
+    },
+    "/telegram_history/{historyId}": {
+      "schema": "TelegramHistory",
+      "description": "History of Telegram messages sent"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "دكان - لوحة التحكم",
+  "description": "لوحة تحكم احترافية لإدارة متجر دكان مع نظام متكامل لإدارة المنتجات والطلبات والعملاء.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}

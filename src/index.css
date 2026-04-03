@@ -1,0 +1,116 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-primary: var(--color-primary);
+  --color-primary-dark: var(--color-primary-dark);
+  --color-bg-main: var(--color-bg-main);
+  --color-bg-card: var(--color-bg-card);
+  --color-bg-light: var(--color-bg-light);
+  --color-text-main: var(--color-text-main);
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  :root {
+    --color-primary: #7F3F98;
+    --color-primary-dark: #5B2C83;
+    --color-bg-main: #05080F;
+    --color-bg-card: #0B0F1A;
+    --color-bg-light: #151B2B;
+    --color-text-main: #CFCFD2;
+    --text-primary: #ffffff;
+  }
+
+  .theme-ramadan {
+    --color-primary: #d4af37;
+    --color-primary-dark: #b8962e;
+    --color-bg-main: #0a140a;
+    --color-bg-card: #122412;
+    --color-bg-light: #1a331a;
+    --color-text-main: #e8e8e8;
+    --text-primary: #ffffff;
+  }
+
+  .theme-winter {
+    --color-primary: #38bdf8;
+    --color-primary-dark: #0ea5e9;
+    --color-bg-main: #0f172a;
+    --color-bg-card: #1e293b;
+    --color-bg-light: #334155;
+    --color-text-main: #e2e8f0;
+    --text-primary: #f8fafc;
+  }
+
+  body {
+    background-color: var(--color-bg-main);
+    color: var(--color-text-main);
+  }
+}
+
+/* Custom Markdown Styles */
+.prose {
+  max-width: none;
+  line-height: 1.8;
+}
+
+.prose ul {
+  list-style-type: none;
+  padding-right: 0;
+  margin-bottom: 1.5rem;
+}
+
+.prose li {
+  margin-bottom: 0.75rem;
+  position: relative;
+  padding-right: 1.75rem;
+  font-weight: 500;
+}
+
+.prose li::before {
+  content: "•";
+  position: absolute;
+  right: 0;
+  color: var(--color-primary);
+  font-weight: 900;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.prose p {
+  margin-bottom: 1.25rem;
+  opacity: 0.9;
+}
+
+.prose h1, .prose h2, .prose h3 {
+  color: white;
+  font-weight: 900;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-style: italic;
+  letter-spacing: -0.02em;
+}
+
+.prose img {
+  border-radius: 1.5rem;
+  margin: 2rem 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  width: 100%;
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Custom Theme Decorations */
+.theme-ramadan .ramadan-only { display: block; }
+.theme-winter .winter-only { display: block; }
+.ramadan-only, .winter-only { display: none; }

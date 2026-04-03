@@ -1,0 +1,144 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isSignedIn() && (
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'super_admin', 'team_member']) ||
+        request.auth.token.email == "pcthrone4@gmail.com" ||
+        request.auth.token.email == "admin@dukan.com" ||
+        request.auth.uid == "z8kiRQ1Go3URNDFQnaOeABsSGYU2"
+      );
+    }
+
+    // Webhook Logs: Only admins can read/write
+    match /webhook_logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Products: Everyone can read, only admins can write
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+      allow update: if true; 
+    }
+    
+    // Categories: Everyone can read, only admins can write
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Brands: Everyone can read, only admins can write
+    match /brands/{brandId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Orders: Users can read/write their own, admins can do everything
+    match /orders/{orderId} {
+      allow create: if true; 
+      allow get: if true; // Allow everyone to see their own order success page if they have the ID
+      allow list: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+    
+    // Users: Users can read/write their own, admins can read all
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || (userId != request.auth.uid && isAdmin()));
+      allow write: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      // Allow searching for users by email during signup/invite
+      allow list: if isAdmin(); // Only admins should list all users
+    }
+    
+    // Shipping Companies: Everyone can read, only admins can write
+    match /shipping_companies/{companyId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Landing Shipping Companies: Everyone can read, only admins can write
+    match /landing_shipping_companies/{companyId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Hero Slides: Everyone can read, only admins can write
+    match /hero_slides/{slideId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Tickets (Support): Everyone can create, only admins can read/update/delete
+    match /tickets/{ticketId} {
+      allow create: if true;
+      allow get: if true; // Allow everyone to see their own ticket if they have the ID
+      allow list, update, delete: if isAdmin();
+    }
+
+    // Settings: Everyone can read, only admins can write
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Reviews: Everyone can read, signed in users can create, only admins can delete
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow delete: if isAdmin();
+    }
+
+    // Wishlists: Users can read/write their own
+    match /wishlists/{wishlistId} {
+      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+    }
+
+    // Stories: Everyone can read, only admins can write
+    match /stories/{storyId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // PSU Components: Everyone can read, only admins can write
+    match /psu_components/{componentId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Suppliers: Only admins can read/write
+    match /suppliers/{supplierId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Gateway Settlements: Only admins can read/write
+    match /gateway_settlements/{settlementId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Landing Page Sessions: Everyone can create/update (for tracking), only admins can read
+    match /landing_page_sessions/{sessionId} {
+      allow create, update, get: if true;
+      allow list: if isAdmin();
+    }
+
+    // User Activities: Users can create their own logs, admins can read all
+    match /user_activities/{activityId} {
+      allow create: if true;
+      allow read: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+    }
+
+    // Telegram History: Only admins can read/write
+    match /telegram_history/{historyId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}
